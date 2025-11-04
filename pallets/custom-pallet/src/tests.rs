@@ -162,3 +162,40 @@ fn user_interactions_overflow() {
         );
     });
 }
+
+#[test]
+fn reset_counter_works() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        // First increment the counter
+        assert_ok!(CustomPallet::increment(RuntimeOrigin::signed(1), 1));
+
+        // Ensure the event matches the increment action
+        System::assert_last_event(
+            Event::CounterIncremented {
+                counter_value: 1,
+                who: 1,
+                incremented_amount: 1,
+            }
+            .into(),
+        );
+
+        // Reset should work with root origin
+        assert_ok!(CustomPallet::reset_counter(RuntimeOrigin::root()));
+
+        // Check that the event was emitted
+        System::assert_last_event(Event::CounterValueSet { counter_value: 0 }.into());
+    });
+}
+
+#[test]
+fn reset_counter_fails_without_root() {
+    new_test_ext().execute_with(|| {
+        System::set_block_number(1);
+        // Should fail with non-root origin
+        assert_noop!(
+            CustomPallet::reset_counter(RuntimeOrigin::signed(1)),
+            sp_runtime::DispatchError::BadOrigin
+        );
+    });
+}
