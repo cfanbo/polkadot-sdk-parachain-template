@@ -3375,6 +3375,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "custom-pallet"
+version = "0.1.0"
+dependencies = [
+ "parity-scale-codec",
+ "polkadot-sdk-frame",
+ "scale-info",
+]
+
+[[package]]
 name = "cxx"
 version = "1.0.158"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10011,6 +10020,7 @@ name = "parachain-template-runtime"
 version = "0.1.0"
 dependencies = [
  "cumulus-pallet-parachain-system",
+ "custom-pallet",
  "docify",
  "hex-literal",
  "log",
