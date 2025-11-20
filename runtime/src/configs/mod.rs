@@ -324,19 +324,19 @@ impl pallet_parachain_template::Config for Runtime {
     type WeightInfo = pallet_parachain_template::weights::SubstrateWeight<Runtime>;
 }
 
-/// new pallet
 // Define counter max value runtime constant.
 parameter_types! {
     pub const CounterMaxValue: u32 = 500;
 }
 
+// 为 Runtime 实现自定义 custom-pallet 的 custom_pallet::Config
 impl custom_pallet::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type CounterMaxValue = CounterMaxValue;
     type WeightInfo = custom_pallet::weights::SubstrateWeight<Runtime>;
+    type Currency = Balances;
 }
 
-/// pallet 2
 impl pallet_utility::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeCall = RuntimeCall;

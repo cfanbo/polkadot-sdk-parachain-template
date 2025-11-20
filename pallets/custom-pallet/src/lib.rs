@@ -18,6 +18,7 @@ use crate::weights::WeightInfo;
 pub mod pallet {
     use super::*;
     use frame::{
+        deps::frame_support::traits::Currency,
         deps::sp_runtime::DispatchResult,
         prelude::{ensure_root, *},
     };
@@ -34,6 +35,8 @@ pub mod pallet {
 
         /// A type representing the weights required by the dispatchables of this pallet.
         type WeightInfo: WeightInfo;
+
+        type Currency: Currency<Self::AccountId>;
     }
 
     #[pallet::event]
@@ -60,6 +63,12 @@ pub mod pallet {
             /// The amount by which the counter was decremented.
             decremented_amount: u32,
         },
+        /// 转账成功事件
+        TransferSucceeded {
+            from: T::AccountId,
+            to: T::AccountId,
+            amount: <T::Currency as Currency<T::AccountId>>::Balance,
+        },
     }
 
     #[pallet::storage]
@@ -78,6 +87,11 @@ pub mod pallet {
         CounterOverflow,
         /// Overflow occurred in user interactions.
         UserInteractionOverflow,
+
+        /// transfer
+        InsufficientBalance,
+        ZeroAmount,
+        TransferToSelf,
     }
 
     #[pallet::call]
@@ -178,6 +192,34 @@ pub mod pallet {
             ensure_root(origin)?;
             <CounterValue<T>>::put(0u32);
             Self::deposit_event(Event::CounterValueSet { counter_value: 0 });
+            Ok(())
+        }
+
+        #[pallet::call_index(4)]
+        #[pallet::weight(0)]
+        pub fn transfer(
+            origin: OriginFor<T>,
+            dest: T::AccountId,
+            amount: <T::Currency as Currency<T::AccountId>>::Balance,
+        ) -> DispatchResult {
+            let from = ensure_signed(origin)?;
+            // 输入验证
+            ensure!(amount > Zero::zero(), Error::<T>::ZeroAmount);
+            ensure!(from != dest, Error::<T>::TransferToSelf);
+
+            // 检查余额是否足够
+            let from_balance = T::Currency::free_balance(&from);
+            ensure!(from_balance >= amount, Error::<T>::InsufficientBalance);
+
+            // 执行转账
+            T::Currency::transfer(&from, &dest, amount, ExistenceRequirement::KeepAlive)?;
+
+            Self::deposit_event(Event::TransferSucceeded {
+                from,
+                to: dest,
+                amount,
+            });
+
             Ok(())
         }
     }

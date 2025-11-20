@@ -18,4 +18,10 @@ id = 1000
 [parachains.collator]
 name = "charlie"
 ws_port = 9988
-command = "parachain-template-node"
+command = "./target/release/parachain-template-node"
+
+# 为同一个 parachain 添加第二个收集器
+# [[parachains.collators]]
+# name = "dave"
+# ws_port = 9989
+# command = "./target/release/parachain-template-node"
