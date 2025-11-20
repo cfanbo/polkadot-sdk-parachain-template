@@ -13,7 +13,15 @@ FEATURES :=
 build:
 	@echo "Building $(BINARY_NAME) in release mode..."
 	cargo build $(RELEASE_FLAGS) -p $(BINARY_NAME) $(CARGO_FLAGS)
+build-pallet:
+	cargo build --package custom-pallet
 
+# 单节一个平行链服务 https://docs.polkadot.com/tutorials/polkadot-sdk/parachains/zero-to-hero/set-up-a-template/#start-the-local-chain
+run:
+	chain-spec-builder create -t development --relay-chain paseo --para-id 1000 --runtime ./target/release/wbuild/parachain-template-runtime/parachain_template_runtime.compact.compressed.wasm named-preset development
+	polkadot-omni-node --chain ./chain_spec.json --dev
+
+# 启用一个包含中继链和平等链的环境
 serve:
 	zombienet -p native spawn zombienet.toml
 
@@ -22,10 +30,6 @@ debug:
 	@echo "Building $(BINARY_NAME) in debug mode..."
 	cargo build -p $(BINARY_NAME) $(CARGO_FLAGS)
 
-# 安装到 Cargo bin 目录
-install: build
-	@echo "Installing $(BINARY_NAME)..."
-	cargo install --path node --locked --force
 
 # 清理构建文件
 clean:
@@ -61,12 +65,15 @@ dev:
 # 构建 WASM runtime
 wasm:
 	@echo "Building WASM runtime..."
-	cargo build -p parachain-template-runtime --target wasm32-unknown-unknown --release
+	srtool build --package $(BINARY_NAME)
+	# cargo build -p parachain-template-runtime --target wasm32-unknown-unknown --release
 
 # 显示帮助信息
 help:
 	@echo "Available targets:"
 	@echo "  build     - Build release version (default)"
+	@echo "  run       - 运行平等链节点"
+	@echo "  serve     - 本地启用区块链服务，包含中继链与平行链"
 	@echo "  debug     - Build debug version"
 	@echo "  dev       - Fast development build"
 	@echo "  install   - Install binary to cargo bin"

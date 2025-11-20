@@ -1,3 +1,4 @@
 target/
 para-state
 para-wasm
+chain_spec.json
