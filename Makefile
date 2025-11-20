@@ -19,7 +19,7 @@ build-pallet:
 # 单节一个平行链服务 https://docs.polkadot.com/tutorials/polkadot-sdk/parachains/zero-to-hero/set-up-a-template/#start-the-local-chain
 run:
 	chain-spec-builder create -t development --relay-chain paseo --para-id 1000 --runtime ./target/release/wbuild/parachain-template-runtime/parachain_template_runtime.compact.compressed.wasm named-preset development
-	polkadot-omni-node --chain ./chain_spec.json --dev
+	./target/release/parachain-template-node --chain ./chain_spec.json --dev
 
 # 启用一个包含中继链和平等链的环境
 serve:
