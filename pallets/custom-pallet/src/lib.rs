@@ -18,7 +18,7 @@ use crate::weights::WeightInfo;
 pub mod pallet {
     use super::*;
     use frame::{
-        deps::frame_support::traits::Currency,
+        deps::frame_support::traits::{Currency, Hooks},
         deps::sp_runtime::DispatchResult,
         prelude::{ensure_root, *},
     };
@@ -37,6 +37,26 @@ pub mod pallet {
         type WeightInfo: WeightInfo;
 
         type Currency: Currency<Self::AccountId>;
+    }
+
+    /// Hook类型枚举，用于区分不同的hook函数
+    #[derive(
+        Clone,
+        Copy,
+        PartialEq,
+        Eq,
+        Debug,
+        codec::Encode,
+        codec::Decode,
+        codec::DecodeWithMemTracking,
+        codec::MaxEncodedLen,
+        scale_info::TypeInfo,
+    )]
+    pub enum HookType {
+        /// on_initialize hook
+        OnInitialize,
+        /// on_finalize hook
+        OnFinalize,
     }
 
     #[pallet::event]
@@ -68,6 +88,11 @@ pub mod pallet {
             from: T::AccountId,
             to: T::AccountId,
             amount: <T::Currency as Currency<T::AccountId>>::Balance,
+        },
+        /// 调用Hooks
+        HooksFuncCalled {
+            hook_type: HookType,
+            block_number: BlockNumberFor<T>,
         },
     }
 
@@ -221,6 +246,56 @@ pub mod pallet {
             });
 
             Ok(())
+        }
+    }
+
+    #[pallet::hooks]
+    impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+        /// 在每个区块开始时调用的 hook
+        fn on_initialize(_block_number: frame_system::pallet_prelude::BlockNumberFor<T>) -> Weight {
+            // 获取当前计数器值
+            let current_counter = CounterValue::<T>::get().unwrap_or(0);
+
+            // 如果计数器值为 0，则初始化为 1
+            if current_counter == 0 {
+                CounterValue::<T>::put(1u32);
+
+                // 记录初始化事件
+                Self::deposit_event(Event::CounterValueSet { counter_value: 1 });
+                Self::deposit_event(Event::HooksFuncCalled {
+                    hook_type: HookType::OnInitialize,
+                    block_number: _block_number,
+                });
+
+                // 返回执行的权重：一次存储写入
+                T::DbWeight::get().writes(1)
+            } else {
+                // 没有执行任何操作，返回最小权重
+                Weight::zero()
+            }
+        }
+
+        /// 在每个区块结束时调用的 hook
+        fn on_finalize(_block_number: BlockNumberFor<T>) {
+            // 获取当前计数器值
+            let current_counter = CounterValue::<T>::get().unwrap_or(0);
+
+            // 如果计数器值超过最大值的一半，发出警告事件
+            let max_value = T::CounterMaxValue::get();
+            if current_counter > max_value / 2 {
+                // 通过事件系统通知而非直接日志
+                Self::deposit_event(Event::CounterValueSet {
+                    counter_value: current_counter,
+                });
+                Self::deposit_event(Event::HooksFuncCalled {
+                    hook_type: HookType::OnFinalize,
+                    block_number: _block_number,
+                });
+            }
+
+            // 检查是否有用户交互次数异常高的账户
+            // 这里可以存储需要监控的账户，而不是直接日志
+            // 实际应用中可能需要更复杂的逻辑
         }
     }
 }
